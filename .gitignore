@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+*.generated.hack
+*.verified.hack
+.venv/
+venv/
+.idea/
+.vscode/
+Thumbs.db

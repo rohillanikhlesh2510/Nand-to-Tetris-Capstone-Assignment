@@ -1,0 +1,47 @@
+// Hack CPU: executes A-instructions and C-instructions.
+CHIP CPU {
+    IN inM[16], instruction[16], reset;
+    OUT outM[16], writeM, addressM[15], pc[15];
+
+    PARTS:
+    // A register: load the instruction value for A-instructions,
+    // or the ALU result when a C-instruction writes to A.
+    Not(in=instruction[15], out=isAInstruction);
+    And(a=instruction[15], b=instruction[5], out=writeAFromALU);
+    Or(a=isAInstruction, b=writeAFromALU, out=loadA);
+    Mux16(a=instruction, b=aluOut, sel=instruction[15], out=aInput);
+    ARegister(in=aInput, load=loadA, out=aOut, out[0..14]=addressM);
+
+    // D register is written only when the C-instruction dest bit is set.
+    And(a=instruction[15], b=instruction[4], out=loadD);
+    DRegister(in=aluOut, load=loadD, out=dOut);
+
+    // ALU y input selects A or the memory-mapped value M.
+    Mux16(a=aOut, b=inM, sel=instruction[12], out=aluY);
+    ALU(
+        x=dOut, y=aluY,
+        zx=instruction[11], nx=instruction[10],
+        zy=instruction[9], ny=instruction[8],
+        f=instruction[7], no=instruction[6],
+        out=aluOut, zr=zr, ng=ng
+    );
+
+    // Write to M only for a C-instruction with dest bit M set.
+    And(a=instruction[15], b=instruction[3], out=writeM);
+    Or16(a=aluOut, b=false, out=outM);
+
+    // Jump conditions: JGT = positive, JEQ = zero, JLT = negative.
+    // Combining the selected conditions also implements JGE/JNE/JLE/JMP.
+    Not(in=zr, out=notZero);
+    Not(in=ng, out=notNegative);
+    And(a=notNegative, b=notZero, out=isPositive);
+    And(a=instruction[0], b=isPositive, out=jumpIfPositive);
+    And(a=instruction[1], b=zr, out=jumpIfZero);
+    And(a=instruction[2], b=ng, out=jumpIfNegative);
+    Or(a=jumpIfPositive, b=jumpIfZero, out=jumpPart1);
+    Or(a=jumpPart1, b=jumpIfNegative, out=jumpCondition);
+    And(a=instruction[15], b=jumpCondition, out=loadPC);
+
+    // A jump uses the old A-register value; PC otherwise increments.
+    PC(in=aOut, load=loadPC, inc=true, reset=reset, out[0..14]=pc);
+}
