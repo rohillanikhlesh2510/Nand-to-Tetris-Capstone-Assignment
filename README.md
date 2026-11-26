@@ -9,7 +9,7 @@ An individual capstone implementation organised into the three required parts:
 
 ## Personal configuration
 
-`Part-B-Assembler/config.json` currently contains `K = 5`. Confirm this is the last two digits of Nikhlesh Rohilla's university roll number (2501730005) before submission.
+`Part-B-Assembler/config.json` currently contains `K = 5`.this is the last two digits of Nikhlesh Rohilla's university roll number (2501730005)
 
 For this configuration:
 
